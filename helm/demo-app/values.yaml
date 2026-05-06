@@ -1,0 +1,11 @@
+image:
+  repository: your-dockerhub/demo-app
+  tag: latest
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  host: demo.local

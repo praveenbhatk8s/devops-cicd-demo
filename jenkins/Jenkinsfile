@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('SonarQube') {
+            steps {
+                sh 'mvn sonar:sonar'
+            }
+        }
+
+        stage('Trivy FS Scan') {
+            steps {
+                sh 'trivy fs .'
+            }
+        }
+
+        stage('Kaniko Build & Push') {
+            steps {
+                sh '''
+                /kaniko/executor                 --dockerfile=app/Dockerfile                 --context=dir://app                 --destination=your-dockerhub/demo-app:latest
+                '''
+            }
+        }
+
+        stage('Trivy Image Scan') {
+            steps {
+                sh 'trivy image your-dockerhub/demo-app:latest'
+            }
+        }
+
+        stage('Deploy Helm') {
+            steps {
+                sh 'helm upgrade --install demo helm/demo-app'
+            }
+        }
+    }
+}
