@@ -39,7 +39,9 @@ spec:
         stage('Build') {
             steps {
                 container('maven') {
+                    dir('app') {
                     sh 'mvn clean package'
+                    }
                 }
             }
         }
@@ -47,7 +49,9 @@ spec:
         stage('SonarQube') {
             steps {
                 container('maven') {
+                    dir('app') {
                     sh 'mvn sonar:sonar'
+                   }
                 }
             }
         }
