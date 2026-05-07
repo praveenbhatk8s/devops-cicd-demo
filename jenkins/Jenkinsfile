@@ -25,8 +25,7 @@ spec:
 
   - name: kaniko
     image: gcr.io/kaniko-project/executor:latest
-    command: ["sh"]
-    args: ["-c", "while true; do sleep 30; done"]
+    args: ["sleep", "infinity"]
 
   volumes:
   - name: docker-config
@@ -66,18 +65,15 @@ spec:
         }
 
         stage('Kaniko Build & Push') {
-            steps {
-                container('kaniko') {
-                    sh '''
-                    /kaniko/executor \
-                      --dockerfile=app/Dockerfile \
-                      --context=dir://app \
-                      --destination=$IMAGE_NAME
-                    '''
-                }
-            }
+          steps {
+            sh '''
+             /kaniko/executor \
+             --dockerfile=app/Dockerfile \
+             --context=dir://app \
+             --destination=panni1986/demo-app:latest
+              '''
+          }
         }
-
         stage('Trivy Image Scan') {
             steps {
                 container('trivy') {
