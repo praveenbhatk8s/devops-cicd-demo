@@ -1,8 +1,8 @@
 pipeline {
 
     agent {
-        kubernetes {
-            yaml '''
+    kubernetes {
+        yaml '''
 apiVersion: v1
 kind: Pod
 spec:
@@ -10,38 +10,30 @@ spec:
 
   - name: maven
     image: maven:3.9.6-eclipse-temurin-17
-    command:
-    - cat
+    command: ["sh", "-c", "cat"]
     tty: true
 
   - name: trivy
     image: aquasec/trivy:latest
-    command:
-    - cat
+    command: ["sh", "-c", "cat"]
+    tty: true
+
+  - name: helm
+    image: alpine/helm:3.14.0
+    command: ["sh", "-c", "cat"]
     tty: true
 
   - name: kaniko
     image: gcr.io/kaniko-project/executor:latest
-    command:
-    - cat
-    tty: true
-    volumeMounts:
-    - name: kaniko-secret
-      mountPath: /kaniko/.docker
-
-  - name: helm
-    image: alpine/helm:3.14.0
-    command:
-    - cat
-    tty: true
+    command: ["sh"]
+    args: ["-c", "while true; do sleep 30; done"]
 
   volumes:
-  - name: kaniko-secret
-    secret:
-      secretName: dockerhub-secret
+  - name: docker-config
+    emptyDir: {}
 '''
-        }
     }
+}
 
     environment {
         IMAGE_NAME = "panni1986/demo-app:latest"
