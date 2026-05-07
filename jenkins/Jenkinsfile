@@ -1,42 +1,104 @@
 pipeline {
-    agent any
+
+    agent {
+        kubernetes {
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+
+  - name: maven
+    image: maven:3.9.6-eclipse-temurin-17
+    command:
+    - cat
+    tty: true
+
+  - name: trivy
+    image: aquasec/trivy:latest
+    command:
+    - cat
+    tty: true
+
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:latest
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - name: kaniko-secret
+      mountPath: /kaniko/.docker
+
+  - name: helm
+    image: alpine/helm:3.14.0
+    command:
+    - cat
+    tty: true
+
+  volumes:
+  - name: kaniko-secret
+    secret:
+      secretName: dockerhub-secret
+'''
+        }
+    }
+
+    environment {
+        IMAGE_NAME = "panni1986/demo-app:latest"
+    }
 
     stages {
+
         stage('Build') {
             steps {
-                sh 'mvn clean package'
+                container('maven') {
+                    sh 'mvn clean package'
+                }
             }
         }
 
         stage('SonarQube') {
             steps {
-                sh 'mvn sonar:sonar'
+                container('maven') {
+                    sh 'mvn sonar:sonar'
+                }
             }
         }
 
         stage('Trivy FS Scan') {
             steps {
-                sh 'trivy fs .'
+                container('trivy') {
+                    sh 'trivy fs .'
+                }
             }
         }
 
         stage('Kaniko Build & Push') {
             steps {
-                sh '''
-                /kaniko/executor                 --dockerfile=app/Dockerfile                 --context=dir://app                 --destination=your-dockerhub/demo-app:latest
-                '''
+                container('kaniko') {
+                    sh '''
+                    /kaniko/executor \
+                      --dockerfile=app/Dockerfile \
+                      --context=dir://app \
+                      --destination=$IMAGE_NAME
+                    '''
+                }
             }
         }
 
         stage('Trivy Image Scan') {
             steps {
-                sh 'trivy image your-dockerhub/demo-app:latest'
+                container('trivy') {
+                    sh 'trivy image $IMAGE_NAME'
+                }
             }
         }
 
         stage('Deploy Helm') {
             steps {
-                sh 'helm upgrade --install demo helm/demo-app'
+                container('helm') {
+                    sh 'helm upgrade --install demo helm/demo-app'
+                }
             }
         }
     }
