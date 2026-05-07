@@ -23,13 +23,9 @@ spec:
     command: ["sh", "-c", "cat"]
     tty: true
 
-  - name: kaniko
-    image: gcr.io/kaniko-project/executor:latest
-    args: ["sleep", "infinity"]
-
-  volumes:
+  volumeMounts:
   - name: docker-config
-    emptyDir: {}
+  mountPath: /kaniko/.docker
 '''
     }
 }
@@ -65,15 +61,17 @@ spec:
         }
 
         stage('Kaniko Build & Push') {
-          steps {
-            sh '''
-             /kaniko/executor \
+           steps {
+             sh '''
+            /kaniko/executor \
              --dockerfile=app/Dockerfile \
              --context=dir://app \
-             --destination=panni1986/demo-app:latest
-              '''
-          }
+             --destination=panni1986/demo-app:latest \
+             --skip-tls-verify
+            '''
+           }
         }
+        
         stage('Trivy Image Scan') {
             steps {
                 container('trivy') {
